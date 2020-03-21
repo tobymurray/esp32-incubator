@@ -73,6 +73,9 @@ void initialize_wifi_in_station_mode(void) {
   esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
 }
 
+/**
+ * Block, waiting for IP address from Wi-Fi connection
+ */
 void wait_for_ip(void) {
   ESP_LOGI(TAG, "Waiting for IP address");
   xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
