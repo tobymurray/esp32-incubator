@@ -1,0 +1,13 @@
+menu "SNTP Helper"
+    config SNTP_HOST
+        string "SNTP HOST"
+        default "pool.ntp.org"
+        help
+            URL of the SNTP server to connect to
+
+    config NTP_SYNC_PERIOD_SECONDS
+        int "NTP Sync period"
+        default 86400
+        help
+            How frequently time should be sync'd with NTP server, in seconds
+endmenu
