@@ -23,7 +23,8 @@ void i2c_master_init() {
   i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 }
 
-signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
+signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data,
+                                 unsigned char cnt) {
   signed int iError = BME280_INIT_VALUE;
 
   esp_err_t espRc;
@@ -47,7 +48,8 @@ signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr,
   return (s8)iError;
 }
 
-signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
+signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data,
+                                unsigned char cnt) {
   signed int iError = BME280_INIT_VALUE;
   esp_err_t espRc;
 
@@ -111,7 +113,7 @@ void task_bme280_forced_mode(void *ignore) {
   wait_time = bme280_compute_wait_time(&wait_time);
   while (true) {
     // bme280.delay_msec(wait_time);
-    vTaskDelay(1000/portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     result = bme280_get_forced_uncomp_pressure_temperature_humidity(&v_uncomp_pressure, &v_uncomp_temperature,
                                                                     &v_uncomp_humidity);
 

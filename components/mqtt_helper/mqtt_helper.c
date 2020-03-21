@@ -1,11 +1,11 @@
+#include "mqtt_helper.h"
+
 #include <esp_log.h>
 
+#include "cJSON.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "mqtt_client.h"
-
-#include "cJSON.h"
-#include "mqtt_helper.h"
 #include "stdatomic.h"
 
 #define MQTT_BROKER_URL CONFIG_MQTT_BROKER_URL
