@@ -2,6 +2,10 @@
 *.o
 *.pyc
 
+# Generated configuration files
+sdkconfig
+sdkconfig.old
+
 # gtags
 GTAGS
 GRTAGS
