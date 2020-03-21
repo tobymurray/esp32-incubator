@@ -23,7 +23,7 @@ void i2c_master_init() {
   i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 }
 
-char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
+signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
   signed int iError = BME280_INIT_VALUE;
 
   esp_err_t espRc;
@@ -47,7 +47,7 @@ char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsign
   return (s8)iError;
 }
 
-char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
+signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data, unsigned char cnt) {
   signed int iError = BME280_INIT_VALUE;
   esp_err_t espRc;
 
