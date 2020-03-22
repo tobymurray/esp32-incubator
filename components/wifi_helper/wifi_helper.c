@@ -2,6 +2,7 @@
 
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_sleep.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
@@ -24,6 +25,8 @@ static int s_retry_num = 0;
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t wifi_event_group;
+
+RTC_DATA_ATTR static useconds_t connection_delay = 500000;  // 1/2 second Delay in usec
 
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
   // When starting Wi-Fi has gone well and the intention is to connect in station mode
@@ -78,5 +81,24 @@ void initialize_wifi_in_station_mode(void) {
  */
 void wait_for_ip(void) {
   ESP_LOGI(TAG, "Waiting for IP address");
-  xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
+  EventBits_t uxBits = xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, pdMS_TO_TICKS(10000));
+
+  if (uxBits && WIFI_CONNECTED_BIT) {
+    return;
+  }
+
+  if (connection_delay <= (1000000LL * 1024)) {  // roughly 17 minutes
+    // Wait twice as long as the time before
+    connection_delay *= 2;
+  }
+
+  long long int minutes = (connection_delay / 1000000LL) / 60;
+  long long int seconds = (connection_delay / 1000000LL) % 60;
+  if (minutes > 0) {
+    ESP_LOGI(TAG, "Failed to get an IP address, so going to sleep for %lld minutes and %lld seconds", minutes, seconds);
+  } else {
+    ESP_LOGI(TAG, "Failed to get an IP address, so going to sleep for %lld seconds", seconds);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_deep_sleep(connection_delay);
+  }
 }
