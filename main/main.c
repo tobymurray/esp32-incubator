@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "wifi_helper.h"
+#include "sntp_helper.h"
 
 static const char* TAG = "Main";
 
@@ -38,6 +39,19 @@ void app_main(void) {
 
   initialize_wifi_in_station_mode();
   wait_for_ip();
+
+  time_t now;
+  set_current_time(&now);
+
+  if (!time_is_set(now) || time_is_stale(now)) {
+    ESP_LOGI(TAG, "Time has either not been set or become stale. Connecting to WiFi and syncing time over NTP.");
+    wait_for_ip();
+    obtain_time(&now);
+  }
+
+  char strftime_buf[64];
+  get_time_string(strftime_buf);
+  ESP_LOGI(TAG, "Time is: %s", strftime_buf);
 
   kick_off();
 }
