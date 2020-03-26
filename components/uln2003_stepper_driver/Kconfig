@@ -1,0 +1,25 @@
+menu "Stepper driver"
+    config IN1_PIN
+        int "IN1 Pin"
+        default 5
+        help
+            The pin to use for stepper driver input 1
+
+    config IN2_PIN
+        int "IN1 Pin"
+        default 6
+        help
+            The pin to use for stepper driver input 2
+
+    config IN3_PIN
+        int "IN1 Pin"
+        default 7
+        help
+            The pin to use for stepper driver input 3
+
+    config IN4_PIN
+        int "IN4 Pin"
+        default 8
+        help
+            The pin to use for stepper driver input 4
+endmenu
