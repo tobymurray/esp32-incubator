@@ -82,10 +82,10 @@ signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, 
 
 void BME280_delay_msek(unsigned int msek) { vTaskDelay(msek / portTICK_PERIOD_MS); }
 
-void task_bme280_forced_mode(void *ignore) {
+void task_bme280_forced_mode(void *i2c_address) {
   struct bme280_t bme280 = {.bus_write = BME280_I2C_bus_write,
                             .bus_read = BME280_I2C_bus_read,
-                            .dev_addr = BME280_I2C_ADDRESS2,
+                            .dev_addr = (uint8_t) i2c_address,
                             .delay_msec = BME280_delay_msek};
 
   signed int result;
@@ -111,14 +111,15 @@ void task_bme280_forced_mode(void *ignore) {
   }
 
   wait_time = bme280_compute_wait_time(&wait_time);
+
   while (true) {
-    // bme280.delay_msec(wait_time);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     result = bme280_get_forced_uncomp_pressure_temperature_humidity(&v_uncomp_pressure, &v_uncomp_temperature,
                                                                     &v_uncomp_humidity);
 
     if (result == SUCCESS) {
-      ESP_LOGI(TAG, "%.2f degC / %.3f hPa / %.3f %%", bme280_compensate_temperature_double(v_uncomp_temperature),
+      ESP_LOGI(TAG, "Address %#x, %.2f degC / %.3f hPa / %.3f %%", bme280.dev_addr,
+               bme280_compensate_temperature_double(v_uncomp_temperature),
                bme280_compensate_pressure_double(v_uncomp_pressure) / 100,  // Pa -> hPa
                bme280_compensate_humidity_double(v_uncomp_humidity));
     } else {
@@ -131,5 +132,9 @@ void task_bme280_forced_mode(void *ignore) {
 
 void kick_off(void) {
   i2c_master_init();
-  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode", 2048, NULL, 6, NULL);
+  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_primary", 2048, (void *)BME280_I2C_ADDRESS1, 6, NULL);
+
+  // Offset the second task so they happen at different times
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_secondary", 2048, (void *)BME280_I2C_ADDRESS2, 6, NULL);
 }
