@@ -1,0 +1,7 @@
+menu "Heater"
+    config GPIO_NUMBER
+        int "GPIO pin number"
+        default 12
+        help
+            The pin used to control the heater relay
+endmenu

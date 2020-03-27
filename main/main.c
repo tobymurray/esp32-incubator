@@ -1,9 +1,12 @@
 #include "bme280_helper.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "heater.h"
 #include "nvs_flash.h"
-#include "wifi_helper.h"
 #include "sntp_helper.h"
 #include "uln2003_stepper_driver.h"
+#include "wifi_helper.h"
 
 static const char* TAG = "Main";
 
@@ -38,6 +41,7 @@ void app_main(void) {
   ++boot_count;
   ESP_LOGI(TAG, "Boot count: %d", boot_count);
   initialize();
+  initialize_heater();
 
   // initialize_wifi_in_station_mode();
   // wait_for_ip();
@@ -55,7 +59,16 @@ void app_main(void) {
   // get_time_string(strftime_buf);
   // ESP_LOGI(TAG, "Time is: %s", strftime_buf);
 
-  rotate();
+  // rotate();
 
   kick_off();
+
+  for (int i = 0; i < 100; i++) {
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    if (i % 2 == 0) {
+      turn_on_heater();
+    } else {
+      turn_off_heater();
+    }
+  }
 }
