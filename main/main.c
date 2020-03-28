@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "heater.h"
+#include "humidifier.h"
 #include "nvs_flash.h"
 #include "sntp_helper.h"
 #include "uln2003_stepper_driver.h"
@@ -65,6 +66,12 @@ void app_main(void) {
 
   for (int i = 0; i < 100; i++) {
     vTaskDelay(2000 / portTICK_PERIOD_MS);
+    if (i % 5 == 0) {
+      turn_off_humidifier();
+    } else if (i % 5 == 1) {
+      turn_on_humidifier();
+    }
+
     if (i % 2 == 0) {
       turn_on_heater();
     } else {

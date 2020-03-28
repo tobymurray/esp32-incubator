@@ -1,0 +1,7 @@
+menu "Humidifier"
+    config HUMIDIFIER_GPIO_NUMBER
+        int "GPIO pin number"
+        default 27
+        help
+            The pin used to control the humidifier relay
+endmenu

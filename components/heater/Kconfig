@@ -1,5 +1,5 @@
 menu "Heater"
-    config GPIO_NUMBER
+    config HEATER_GPIO_NUMBER
         int "GPIO pin number"
         default 12
         help
