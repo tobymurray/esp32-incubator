@@ -8,7 +8,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-
 #define SDA_PIN 23
 #define SCL_PIN 22
 
@@ -87,7 +86,7 @@ void BME280_delay_msek(unsigned int msek) { vTaskDelay(msek / portTICK_PERIOD_MS
 void task_bme280_forced_mode(void *i2c_address) {
   struct bme280_t bme280 = {.bus_write = BME280_I2C_bus_write,
                             .bus_read = BME280_I2C_bus_read,
-                            .dev_addr = (uint8_t) i2c_address,
+                            .dev_addr = (uint8_t)i2c_address,
                             .delay_msec = BME280_delay_msek};
 
   signed int result;
@@ -102,28 +101,28 @@ void task_bme280_forced_mode(void *i2c_address) {
     vTaskDelete(NULL);
   }
 
-  result += bme280_set_oversamp_pressure(BME280_OVERSAMP_1X);
-  result += bme280_set_oversamp_temperature(BME280_OVERSAMP_1X);
-  result += bme280_set_oversamp_humidity(BME280_OVERSAMP_1X);
+  result += bme280_set_oversamp_pressure(BME280_OVERSAMP_1X, &bme280);
+  result += bme280_set_oversamp_temperature(BME280_OVERSAMP_1X, &bme280);
+  result += bme280_set_oversamp_humidity(BME280_OVERSAMP_1X, &bme280);
 
-  result += bme280_set_filter(BME280_FILTER_COEFF_OFF);
+  result += bme280_set_filter(BME280_FILTER_COEFF_OFF, &bme280);
   if (result != SUCCESS) {
     ESP_LOGE(TAG, "Error while setting configuration. Code: %d", result);
     vTaskDelete(NULL);
   }
 
-  wait_time = bme280_compute_wait_time(&wait_time);
+  wait_time = bme280_compute_wait_time(&wait_time, &bme280);
 
   while (true) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     result = bme280_get_forced_uncomp_pressure_temperature_humidity(&v_uncomp_pressure, &v_uncomp_temperature,
-                                                                    &v_uncomp_humidity);
+                                                                    &v_uncomp_humidity, &bme280);
 
     if (result == SUCCESS) {
       ESP_LOGI(TAG, "Address %#x, %.2f degC / %.3f hPa / %.3f %%", bme280.dev_addr,
-               bme280_compensate_temperature_double(v_uncomp_temperature),
-               bme280_compensate_pressure_double(v_uncomp_pressure) / 100,  // Pa -> hPa
-               bme280_compensate_humidity_double(v_uncomp_humidity));
+               bme280_compensate_temperature_double(v_uncomp_temperature, &bme280),
+               bme280_compensate_pressure_double(v_uncomp_pressure, &bme280) / 100,  // Pa -> hPa
+               bme280_compensate_humidity_double(v_uncomp_humidity, &bme280));
     } else {
       ESP_LOGE(TAG, "measure error. code: %d", result);
     }
