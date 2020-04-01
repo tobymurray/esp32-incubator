@@ -13,6 +13,8 @@
 
 static const char *TAG = "32700";
 
+ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
+
 void i2c_master_init() {
   i2c_config_t i2c_config = {.mode = I2C_MODE_MASTER,
                              .sda_io_num = SDA_PIN,
@@ -119,10 +121,18 @@ void task_bme280_forced_mode(void *i2c_address) {
                                                                     &v_uncomp_humidity, &bme280);
 
     if (result == SUCCESS) {
-      ESP_LOGI(TAG, "Address %#x, %.2f degC / %.3f hPa / %.3f %%", bme280.dev_addr,
-               bme280_compensate_temperature_double(v_uncomp_temperature, &bme280),
+      float temperature = bme280_compensate_temperature_double(v_uncomp_temperature, &bme280);
+      float humidity = bme280_compensate_humidity_double(v_uncomp_humidity, &bme280);
+
+      ESP_LOGD(TAG, "Address %#x, %.2f degC / %.3f hPa / %.3f %%", bme280.dev_addr, temperature,
                bme280_compensate_pressure_double(v_uncomp_pressure, &bme280) / 100,  // Pa -> hPa
-               bme280_compensate_humidity_double(v_uncomp_humidity, &bme280));
+               humidity);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      ESP_ERROR_CHECK(
+          esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &temperature, sizeof(temperature), portMAX_DELAY));
+      ESP_ERROR_CHECK(
+          esp_event_post(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, &humidity, sizeof(&humidity), portMAX_DELAY));
+
     } else {
       ESP_LOGE(TAG, "measure error. code: %d", result);
     }
