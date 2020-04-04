@@ -9,18 +9,12 @@ static const char *TAG = "32700";
 
 static const long MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 
-enum heating_states {
+enum HeatingState {
   HEATING,
   COOLING
 };
 
-static enum heating_states heating_state = COOLING;
-
-// static int MINIMUM_TEMPERATURE = 37;
-// static int MAXIMUM_TEMPERATURE = 39;
-
-// static int MINIMUM_HUMIDITY = 50;
-// static int MAXIMUM_HUMIDITY = 60;
+static enum HeatingState heating_state = COOLING;
 
 // This is the ideal temperature for the first 18 days
 static float TARGET_INCUBATION_TEMPERATURE = 37.5;
@@ -65,8 +59,7 @@ void chicken_humidity_reading_handler(void* handler_args, esp_event_base_t base,
   }
 }
 
-static void egg_turner_callback(void* arg)
-{
+static void egg_turner_callback(void* arg) {
     int64_t time_since_boot = esp_timer_get_time();
     ESP_LOGI(TAG, "Periodic timer called, time since boot: %lld us", time_since_boot);
 }

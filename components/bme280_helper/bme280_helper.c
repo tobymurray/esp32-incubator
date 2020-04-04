@@ -88,7 +88,7 @@ void BME280_delay_msek(unsigned int msek) { vTaskDelay(msek / portTICK_PERIOD_MS
 void task_bme280_forced_mode(void *i2c_address) {
   struct bme280_t bme280 = {.bus_write = BME280_I2C_bus_write,
                             .bus_read = BME280_I2C_bus_read,
-                            .dev_addr = (uint8_t)i2c_address,
+                            .dev_addr = *(uint8_t *)i2c_address,
                             .delay_msec = BME280_delay_msek};
 
   signed int result;
@@ -130,7 +130,7 @@ void task_bme280_forced_mode(void *i2c_address) {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
 
       struct EventData event_data;
-      event_data.sensor_address = (uint8_t)i2c_address;
+      event_data.sensor_address = *(uint8_t *)i2c_address;
 
       event_data.reading = temperature;
       ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &event_data, sizeof(event_data), portMAX_DELAY));
@@ -148,9 +148,11 @@ void task_bme280_forced_mode(void *i2c_address) {
 
 void start_bme280_read_tasks(void) {
   i2c_master_init();
-  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_primary", 2048, (void *)BME280_I2C_ADDRESS1, 6, NULL);
+  uint8_t i2c_address_1 = BME280_I2C_ADDRESS1;
+  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_primary", 2048, (void *)&i2c_address_1, 6, NULL);
 
   // Offset the second task so they happen at different times
+  uint8_t i2c_address_2 = BME280_I2C_ADDRESS2;
   vTaskDelay(500 / portTICK_PERIOD_MS);
-  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_secondary", 2048, (void *)BME280_I2C_ADDRESS2, 6, NULL);
+  xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_secondary", 2048, (void *)&i2c_address_2, 6, NULL);
 }
