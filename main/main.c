@@ -98,22 +98,5 @@ void app_main(void) {
   // get_time_string(strftime_buf);
   // ESP_LOGI(TAG, "Time is: %s", strftime_buf);
 
-  // rotate();
-
-  kick_off();
-
-  for (int i = 0; i < 100; i++) {
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    if (i % 5 == 0) {
-      turn_off_humidifier();
-    } else if (i % 5 == 1) {
-      turn_on_humidifier();
-    }
-
-    if (i % 2 == 0) {
-      turn_on_heater();
-    } else {
-      turn_off_heater();
-    }
-  }
+  start_bme280_read_tasks();
 }

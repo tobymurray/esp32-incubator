@@ -11,7 +11,7 @@
 #define SDA_PIN 23
 #define SCL_PIN 22
 
-static const char *TAG = "32700";
+static const char *TAG = "BME280_HELPER";
 
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
 
@@ -141,7 +141,7 @@ void task_bme280_forced_mode(void *i2c_address) {
   vTaskDelete(NULL);
 }
 
-void kick_off(void) {
+void start_bme280_read_tasks(void) {
   i2c_master_init();
   xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_primary", 2048, (void *)BME280_I2C_ADDRESS1, 6, NULL);
 

@@ -9,6 +9,6 @@ enum {
     SENSOR_READING_HUMIDITY
 };
 
-void kick_off(void);
+void start_bme280_read_tasks(void);
 
 #endif
