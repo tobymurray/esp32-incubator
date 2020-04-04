@@ -1,4 +1,5 @@
 #include "bme280_helper.h"
+#include "chicken_incubator.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -18,12 +19,6 @@ static const char* TAG = "Main";
  */
 RTC_DATA_ATTR static int boot_count = 0;
 
-static int MINIMUM_TEMPERATURE = 37;
-static int MAXIMUM_TEMPERATURE = 39;
-
-static int MINIMUM_HUMIDITY = 50;
-static int MAXIMUM_HUMIDITY = 60;
-
 static void initialize(void) {
   // Quiet a bunch of logs I'm not interested in right now
   esp_log_level_set("boot", ESP_LOG_WARN);
@@ -42,30 +37,9 @@ static void initialize(void) {
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
-}
 
-static void temperature_reading_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-  float temperature = *((float*)event_data);
-  ESP_LOGI(TAG, "Received temperature reading: %.2f*C", temperature);
-  if (temperature < 37) {
-    ESP_LOGI(TAG, "Temperature %.2f*C is below threshold %i, turning heater on", temperature, MINIMUM_TEMPERATURE);
-    turn_on_heater();
-  } else if (temperature > 39) {
-    ESP_LOGI(TAG, "Temperature %.2f*C is abpve threshold %i, turning heater off", temperature, MAXIMUM_TEMPERATURE);
-    turn_off_heater();
-  }
-}
-
-static void humidity_reading_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-  float humidity = *((float*)event_data);
-  ESP_LOGI(TAG, "Received humidity reading: %.2f%%", humidity);
-  if (humidity < 37) {
-    ESP_LOGI(TAG, "Humidity %.2f*C is below threshold %i, turning heater on", humidity, MINIMUM_HUMIDITY);
-    turn_on_humidifier();
-  } else if (humidity > 39) {
-    ESP_LOGI(TAG, "Humidity %.2f*C is abpve threshold %i, turning heater off", humidity, MAXIMUM_HUMIDITY);
-    turn_off_humidifier();
-  }
+  // Create the default event loop
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
 }
 
 void app_main(void) {
@@ -74,13 +48,10 @@ void app_main(void) {
   ESP_LOGI(TAG, "Boot count: %d", boot_count);
   initialize();
   initialize_heater();
+  initialize_humidifier();
 
-  // Create the default event loop
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-  ESP_ERROR_CHECK(
-      esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, temperature_reading_handler, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, humidity_reading_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, chicken_temperature_reading_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, chicken_humidity_reading_handler, NULL));
 
   // initialize_wifi_in_station_mode();
   // wait_for_ip();

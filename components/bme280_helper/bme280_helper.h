@@ -9,6 +9,11 @@ enum {
     SENSOR_READING_HUMIDITY
 };
 
+struct EventData {
+  float reading;
+  int sensor_address;
+};
+
 void start_bme280_read_tasks(void);
 
 #endif

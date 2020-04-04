@@ -21,7 +21,7 @@ void i2c_master_init() {
                              .scl_io_num = SCL_PIN,
                              .sda_pullup_en = GPIO_PULLUP_ENABLE,
                              .scl_pullup_en = GPIO_PULLUP_ENABLE,
-                             .master.clk_speed = 1000000};
+                             .master.clk_speed = 50000};
   i2c_param_config(I2C_NUM_0, &i2c_config);
   i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 }
@@ -128,10 +128,15 @@ void task_bme280_forced_mode(void *i2c_address) {
                bme280_compensate_pressure_double(v_uncomp_pressure, &bme280) / 100,  // Pa -> hPa
                humidity);
       vTaskDelay(1000 / portTICK_PERIOD_MS);
-      ESP_ERROR_CHECK(
-          esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &temperature, sizeof(temperature), portMAX_DELAY));
-      ESP_ERROR_CHECK(
-          esp_event_post(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, &humidity, sizeof(&humidity), portMAX_DELAY));
+
+      struct EventData event_data;
+      event_data.sensor_address = (uint8_t)i2c_address;
+
+      event_data.reading = temperature;
+      ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &event_data, sizeof(event_data), portMAX_DELAY));
+
+      event_data.reading = humidity;
+      ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, &event_data, sizeof(event_data), portMAX_DELAY));
 
     } else {
       ESP_LOGE(TAG, "measure error. code: %d", result);
