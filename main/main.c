@@ -10,6 +10,7 @@
 #include "sntp_helper.h"
 #include "uln2003_stepper_driver.h"
 #include "wifi_helper.h"
+#include "mqtt_helper.h"
 
 static const char* TAG = "Main";
 
@@ -53,21 +54,49 @@ void app_main(void) {
   ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, chicken_temperature_reading_handler, NULL));
   ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, chicken_humidity_reading_handler, NULL));
 
-  // initialize_wifi_in_station_mode();
-  // wait_for_ip();
+  initialize_wifi_in_station_mode();
+  wait_for_ip();
 
-  // time_t now;
-  // set_current_time(&now);
+  time_t now;
+  set_current_time(&now);
 
-  // if (!time_is_set(now) || time_is_stale(now)) {
-  //   ESP_LOGI(TAG, "Time has either not been set or become stale. Connecting to WiFi and syncing time over NTP.");
-  //   wait_for_ip();
-  //   obtain_time(&now);
-  // }
+  if (!time_is_set(now) || time_is_stale(now)) {
+    ESP_LOGI(TAG, "Time has either not been set or become stale. Connecting to WiFi and syncing time over NTP.");
+    wait_for_ip();
+    obtain_time(&now);
+  }
 
-  // char strftime_buf[64];
-  // get_time_string(strftime_buf);
-  // ESP_LOGI(TAG, "Time is: %s", strftime_buf);
+  char strftime_buf[64];
+  get_time_string(strftime_buf);
+  ESP_LOGI(TAG, "Time is: %s", strftime_buf);
+
+  initialize_mqtt();
+  wait_for_mqtt_to_connect();
+
+
+
+  // Publish battery percentage
+  char battery_percentage_as_string[7];
+
+  float temperature_0 = 12.0;
+  float temperature_1 = 32.0;
+
+  // Publish temperature
+  ESP_LOGI(TAG, "Temperature 0 is %.2f", temperature_0);
+  ESP_LOGI(TAG, "Temperature 1 is %.2f", temperature_1);
+
+  char temperature_0_as_string[6];
+  char temperature_1_as_string[6];
+  snprintf(temperature_0_as_string, 7, "%.2f", temperature_0);
+  snprintf(temperature_1_as_string, 7, "%.2f", temperature_1);
+
+  publish_message(strftime_buf, "esp32/temperature", "temperature_0", temperature_0_as_string, "temperature_1", temperature_1_as_string);
+
+  wait_for_all_messages_to_be_published();
+
+
+
+
 
   start_bme280_read_tasks();
 }

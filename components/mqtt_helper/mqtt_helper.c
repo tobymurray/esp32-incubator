@@ -10,6 +10,7 @@
 
 #define MQTT_BROKER_URL CONFIG_MQTT_BROKER_URL
 
+static const char *BROKER_URL = MQTT_BROKER_URL;
 static const char *TAG = "mqtt_helper";
 
 const int MQTT_CONNECTED = BIT0;
@@ -70,6 +71,8 @@ void initialize_mqtt(void) {
   esp_mqtt_client_config_t mqtt_cfg = {
       .uri = MQTT_BROKER_URL,
   };
+
+  ESP_LOGI(TAG, "Connecting to broker at: %s", BROKER_URL);
 
   client = esp_mqtt_client_init(&mqtt_cfg);
 
