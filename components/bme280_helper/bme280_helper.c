@@ -26,9 +26,8 @@ void i2c_master_init() {
   i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 }
 
-signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data,
-                                 unsigned char cnt) {
-  signed int iError = BME280_INIT_VALUE;
+int8_t BME280_I2C_bus_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t cnt) {
+  signed int iError = BME280_OK;
 
   esp_err_t espRc;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -42,18 +41,17 @@ signed char BME280_I2C_bus_write(unsigned char dev_addr, unsigned char reg_addr,
 
   espRc = i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_PERIOD_MS);
   if (espRc == ESP_OK) {
-    iError = SUCCESS;
+    iError = BME280_OK;
   } else {
-    iError = FAIL;
+    iError = BME280_E_COMM_FAIL;
   }
   i2c_cmd_link_delete(cmd);
 
-  return (s8)iError;
+  return (int8_t )iError;
 }
 
-signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, unsigned char *reg_data,
-                                unsigned char cnt) {
-  signed int iError = BME280_INIT_VALUE;
+int8_t BME280_I2C_bus_read(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t cnt) {
+  signed int iError = BME280_OK;
   esp_err_t espRc;
 
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -73,86 +71,100 @@ signed char BME280_I2C_bus_read(unsigned char dev_addr, unsigned char reg_addr, 
 
   espRc = i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_PERIOD_MS);
   if (espRc == ESP_OK) {
-    iError = SUCCESS;
+    iError = BME280_OK;
   } else {
-    iError = FAIL;
+    iError = BME280_E_COMM_FAIL;
   }
 
   i2c_cmd_link_delete(cmd);
 
-  return (s8)iError;
+  return (int8_t )iError;
 }
 
 void BME280_delay_msek(unsigned int msek) { vTaskDelay(msek / portTICK_PERIOD_MS); }
 
 void task_bme280_forced_mode(void *i2c_address) {
-  struct bme280_t bme280 = {.bus_write = BME280_I2C_bus_write,
-                            .bus_read = BME280_I2C_bus_read,
-                            .dev_addr = *(uint8_t *)i2c_address,
-                            .delay_msec = BME280_delay_msek};
+  struct bme280_dev bme280 = {
+    .intf = BME280_I2C_INTF,
+    .dev_id = *(uint8_t *)i2c_address,
+    .read = BME280_I2C_bus_read,
+    .write = BME280_I2C_bus_write,
+    .delay_ms = BME280_delay_msek
+  };
 
-  signed int result;
-  signed int v_uncomp_pressure;
-  signed int v_uncomp_temperature;
-  signed int v_uncomp_humidity;
-  unsigned char wait_time;
+  /* Variable to define the result */
+  int8_t rslt = BME280_OK;
 
-  result = bme280_init(&bme280);
-  if (result != SUCCESS) {
-    ESP_LOGE(TAG, "Error while initializing. Code: %d", result);
+  /* Variable to define the selecting sensors */
+  uint8_t settings_sel = 0;
+
+  /* Variable to store minimum wait time between consecutive measurement in force mode */
+  uint32_t req_delay;
+
+  /* Structure to get the pressure, temperature and humidity values */
+  struct bme280_data comp_data;
+
+  /* Recommended mode of operation: Indoor navigation */
+  bme280.settings.osr_h = BME280_OVERSAMPLING_1X;
+  bme280.settings.osr_p = BME280_OVERSAMPLING_16X;
+  bme280.settings.osr_t = BME280_OVERSAMPLING_2X;
+  bme280.settings.filter = BME280_FILTER_COEFF_16;
+
+  settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
+
+  /* Set the sensor settings */
+  rslt = bme280_set_sensor_settings(settings_sel, &bme280);
+  if (rslt != BME280_OK) {
+    ESP_LOGE(TAG, "Failed to set sensor settings (code %+d).", rslt);
     vTaskDelete(NULL);
   }
 
-  result += bme280_set_oversamp_pressure(BME280_OVERSAMP_1X, &bme280);
-  result += bme280_set_oversamp_temperature(BME280_OVERSAMP_1X, &bme280);
-  result += bme280_set_oversamp_humidity(BME280_OVERSAMP_1X, &bme280);
+  /*Calculate the minimum delay required between consecutive measurement based upon the sensor enabled
+    *  and the oversampling configuration. */
+  req_delay = bme280_cal_meas_delay(&bme280.settings);
 
-  result += bme280_set_filter(BME280_FILTER_COEFF_OFF, &bme280);
-  if (result != SUCCESS) {
-    ESP_LOGE(TAG, "Error while setting configuration. Code: %d", result);
-    vTaskDelete(NULL);
-  }
-
-  wait_time = bme280_compute_wait_time(&wait_time, &bme280);
-
-  while (true) {
+  /* Continuously stream sensor data */
+  while (true)  {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    result = bme280_get_forced_uncomp_pressure_temperature_humidity(&v_uncomp_pressure, &v_uncomp_temperature,
-                                                                    &v_uncomp_humidity, &bme280);
-
-    if (result == SUCCESS) {
-      float temperature = bme280_compensate_temperature_double(v_uncomp_temperature, &bme280);
-      float humidity = bme280_compensate_humidity_double(v_uncomp_humidity, &bme280);
-
-      ESP_LOGD(TAG, "Address %#x, %.2f degC / %.3f hPa / %.3f %%", bme280.dev_addr, temperature,
-               bme280_compensate_pressure_double(v_uncomp_pressure, &bme280) / 100,  // Pa -> hPa
-               humidity);
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-      struct EventData event_data;
-      event_data.sensor_address = *(uint8_t *)i2c_address;
-
-      event_data.reading = temperature;
-      ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &event_data, sizeof(event_data), portMAX_DELAY));
-
-      event_data.reading = humidity;
-      ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, &event_data, sizeof(event_data), portMAX_DELAY));
-
-    } else {
-      ESP_LOGE(TAG, "measure error. code: %d", result);
+    /* Set the sensor to forced mode */
+    rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &bme280);
+    if (rslt != BME280_OK) {
+        ESP_LOGE(TAG, "Failed to set sensor mode (code %+d).", rslt);
+      vTaskDelete(NULL);
     }
-  }
 
+    /* Wait for the measurement to complete and print data */
+    bme280.delay_ms(req_delay);
+    rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &bme280);
+    if (rslt != BME280_OK) {
+      ESP_LOGE(TAG, "Failed to get sensor data (code %+d).", rslt);
+      vTaskDelete(NULL);
+    }
+
+    float temp = comp_data.temperature;
+    float hum = comp_data.humidity;
+    ESP_LOGI(TAG, "Address %#x, %.2f degC / %.3f %%", bme280.dev_id, temp, hum);
+
+    struct EventData event_data;
+    event_data.sensor_address = bme280.dev_id;
+
+    event_data.reading = temp;
+    ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, &event_data, sizeof(event_data), portMAX_DELAY));
+
+    event_data.reading = hum;
+    ESP_ERROR_CHECK(esp_event_post(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, &event_data, sizeof(event_data), portMAX_DELAY));
+  }
+  
   vTaskDelete(NULL);
 }
 
 void start_bme280_read_tasks(void) {
   i2c_master_init();
-  uint8_t i2c_address_1 = BME280_I2C_ADDRESS1;
+  uint8_t i2c_address_1 = BME280_I2C_ADDR_PRIM;
   xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_primary", 2048, (void *)&i2c_address_1, 6, NULL);
 
   // Offset the second task so they happen at different times
-  uint8_t i2c_address_2 = BME280_I2C_ADDRESS2;
+  uint8_t i2c_address_2 = BME280_I2C_ADDR_SEC;
   vTaskDelay(500 / portTICK_PERIOD_MS);
   xTaskCreate(&task_bme280_forced_mode, "bme280_forced_mode_secondary", 2048, (void *)&i2c_address_2, 6, NULL);
 }
