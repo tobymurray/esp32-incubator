@@ -99,7 +99,7 @@ void wait_for_all_messages_to_be_published(void) {
   }
 }
 
-void publish_message(char datetime[], char topic[], char key[], char payload[], char key2[], char payload2[]) {
+void publish_message(char datetime[], char topic[], char key[], char payload[]) {
   root = cJSON_CreateObject();
   cJSON_AddItemToObject(root, "datetime", cJSON_CreateString(datetime));
 
@@ -110,7 +110,6 @@ void publish_message(char datetime[], char topic[], char key[], char payload[], 
   cJSON_AddItemToObject(root, "mac", cJSON_CreateString(mac_as_text));
 
   cJSON_AddItemToObject(root, key, cJSON_CreateString(payload));
-  cJSON_AddItemToObject(root, key2, cJSON_CreateString(payload2));
 
   char *json_as_string;
 
