@@ -5,9 +5,9 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
-static const char *TAG = "32700";
 
 static const long MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+static const char *TAG = "INCUBATOR";
 
 enum HeatingState {
   HEATING,
