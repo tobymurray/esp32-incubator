@@ -1,0 +1,7 @@
+menu "Chicken Incubator"
+    config ROTATIONS_PER_DAY
+        int "Rotations per day"
+        default 5
+        help
+            Number of times per day to rotate
+endmenu

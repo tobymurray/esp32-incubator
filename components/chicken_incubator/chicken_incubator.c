@@ -5,9 +5,11 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+#define ROTATIONS_PER_DAY CONFIG_ROTATIONS_PER_DAY
 
-static const long MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
 static const char *TAG = "INCUBATOR";
+
+static const unsigned long long int MICROSECONDS_PER_DAY = 86400000000; // 1000 * 1000 * 60 * 60 * 24
 
 enum HeatingState {
   HEATING,
@@ -83,5 +85,7 @@ void chicken_start() {
     esp_timer_handle_t egg_turner_timer;
     ESP_ERROR_CHECK(esp_timer_create(&egg_turner_timer_args, &egg_turner_timer));
 
-    ESP_ERROR_CHECK(esp_timer_start_periodic(egg_turner_timer, MILLIS_PER_DAY/5));
+    ESP_LOGI(TAG, "Number of minutes between rotations: %llu", MICROSECONDS_PER_DAY/ROTATIONS_PER_DAY/1000/1000/60);
+
+    ESP_ERROR_CHECK(esp_timer_start_periodic(egg_turner_timer, MICROSECONDS_PER_DAY/ROTATIONS_PER_DAY));
 }
