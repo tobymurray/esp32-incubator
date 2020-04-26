@@ -14,7 +14,13 @@ enum HeatingState {
   COOLING
 };
 
+enum HumidifierState {
+  HUMIDIFIER_ON,
+  HUMIDIFIER_OFF
+};
+
 static enum HeatingState heating_state = COOLING;
+static enum HumidifierState humidifier_state = HUMIDIFIER_OFF;
 
 // This is the ideal temperature for the first 18 days
 static float TARGET_INCUBATION_TEMPERATURE = 37.5;
@@ -53,10 +59,14 @@ void chicken_humidity_reading_handler(void* handler_args, esp_event_base_t base,
   if (humidity < (TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE)) {
     // ESP_LOGI(TAG, "Humidity %.2f%% is below threshold %.2f%%, turning humidifier on", humidity, TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE);
     // turn_on_humidifier();
+    humidifier_state = HUMIDIFIER_ON;
   } else if (humidity > (TARGET_INCUBATION_HUMIDITY + HUMIDITY_VARIANCE)) {
     // ESP_LOGI(TAG, "Humidity %.2f%% is above threshold %.2f%%, turning humdifier off", humidity, (TARGET_INCUBATION_HUMIDITY + HUMIDITY_VARIANCE));
     turn_off_humidifier();
+    humidifier_state = HUMIDIFIER_OFF;
   }
+
+  ESP_LOGI(TAG, "Humidifier state is: %s", humidifier_state == HUMIDIFIER_ON ? "ON" : "OFF");
 }
 
 static void egg_turner_callback(void* arg) {
