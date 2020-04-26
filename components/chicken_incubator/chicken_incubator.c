@@ -89,6 +89,8 @@ void chicken_start() {
     ESP_ERROR_CHECK(esp_timer_create(&egg_turner_timer_args, &egg_turner_timer));
 
     ESP_LOGI(TAG, "Number of minutes between rotations: %llu", MICROSECONDS_PER_DAY/ROTATIONS_PER_DAY/1000/1000/60);
+    ESP_LOGI(TAG, "Rotating an inital time as a test");
+    rotate();
 
     ESP_ERROR_CHECK(esp_timer_start_periodic(egg_turner_timer, MICROSECONDS_PER_DAY/ROTATIONS_PER_DAY));
 }
