@@ -2,6 +2,7 @@
 #include "heater.h"
 #include "humidifier.h"
 #include "bme280_helper.h"
+#include "uln2003_stepper_driver.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 
@@ -82,6 +83,8 @@ void chicken_start() {
             .name = "egg_turner"
     };
 
+    set_up_uln2003();
+  
     esp_timer_handle_t egg_turner_timer;
     ESP_ERROR_CHECK(esp_timer_create(&egg_turner_timer_args, &egg_turner_timer));
 

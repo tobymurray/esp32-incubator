@@ -34,7 +34,7 @@ int steps[8][4] = {
 	  {LOW, HIGH, HIGH, LOW}
 	};
 
-void set_up() {
+void set_up_uln2003() {
   for (int i = 0; i < 4; i++) {
     ESP_LOGI(TAG, "Setting pin %d (%d) to output", i, pins[i]);
     pinModeOutput(pins[i]);

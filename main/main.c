@@ -43,7 +43,6 @@ static void initialize(void) {
 }
 
 void app_main(void) {
-  set_up();
   ++boot_count;
   ESP_LOGI(TAG, "Boot count: %d", boot_count);
   initialize();
