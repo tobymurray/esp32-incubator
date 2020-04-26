@@ -1,0 +1,17 @@
+menu "BME280 Helper"
+    config SDA_PIN
+        int "SDA pin"
+        default 21
+        help
+            GPIO pin to use for SDA of I2C
+    config SCL_PIN
+        int "SCL pin"
+        default 22
+        help
+            GPIO pin to use for SCL of I2C
+    config READ_INTERVAL_SECONDS
+        int "Seconds between sensor reads"
+        default 10
+        help
+            Number of seconds to wait between sensor reads
+endmenu
