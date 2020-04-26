@@ -5,10 +5,14 @@
 #include "uln2003_stepper_driver.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "mqtt_helper.h"
+#include "sntp_helper.h"
 
 #define ROTATIONS_PER_DAY CONFIG_ROTATIONS_PER_DAY
 
 static const char *TAG = "INCUBATOR";
+static char humidity_measurement[6];
+static char temperature_measurement[6];
 
 static const unsigned long long int MICROSECONDS_PER_DAY = 86400000000; // 1000 * 1000 * 60 * 60 * 24
 
@@ -43,6 +47,13 @@ void chicken_temperature_reading_handler(void* handler_args, esp_event_base_t ba
   struct EventData * data = (struct EventData *) event_data;
   float temperature = data->reading;
   int i2c_address = data->sensor_address;
+
+  snprintf(temperature_measurement, 6, "%.2f", temperature);
+
+  char strftime_buf[64];
+  get_time_string(strftime_buf);
+  publish_message(strftime_buf, "temperature", "temperature", temperature_measurement);
+
   ESP_LOGI(TAG, "Received temperature reading: %.2f*C from sensor %X", temperature, i2c_address);
   if (heating_state == COOLING && temperature < (TARGET_INCUBATION_TEMPERATURE - TEMPERATURE_VARIANCE)) {
     ESP_LOGI(TAG, "Temperature %.2f*C is below threshold %.2f*C, turning heater on", temperature, TARGET_INCUBATION_TEMPERATURE - TEMPERATURE_VARIANCE);
@@ -53,18 +64,27 @@ void chicken_temperature_reading_handler(void* handler_args, esp_event_base_t ba
     turn_off_heater();
     heating_state = COOLING;
   }
+
+  ESP_LOGI(TAG, "Heating state is: %s", heating_state == HEATING ? "HEATING" : "COOLING");
 }
 
 void chicken_humidity_reading_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
   struct EventData * data = (struct EventData *) event_data;
   float humidity = data->reading;
-  // ESP_LOGI(TAG, "Received humidity reading: %.2f%%", humidity);
+
+  snprintf(humidity_measurement, 6, "%.2f", humidity);
+
+  char strftime_buf[64];
+  get_time_string(strftime_buf);
+  publish_message(strftime_buf, "humidity", "relative_humidity", humidity_measurement);
+
+  ESP_LOGI(TAG, "Received humidity reading: %.2f%%", humidity);
   if (humidity < (TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE)) {
-    // ESP_LOGI(TAG, "Humidity %.2f%% is below threshold %.2f%%, turning humidifier on", humidity, TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE);
-    // turn_on_humidifier();
+    ESP_LOGI(TAG, "Humidity %.2f%% is below threshold %.2f%%, turning humidifier on", humidity, TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE);
+    turn_on_humidifier();
     humidifier_state = HUMIDIFIER_ON;
   } else if (humidity > (TARGET_INCUBATION_HUMIDITY + HUMIDITY_VARIANCE)) {
-    // ESP_LOGI(TAG, "Humidity %.2f%% is above threshold %.2f%%, turning humdifier off", humidity, (TARGET_INCUBATION_HUMIDITY + HUMIDITY_VARIANCE));
+    ESP_LOGI(TAG, "Humidity %.2f%% is above threshold %.2f%%, turning humdifier off", humidity, (TARGET_INCUBATION_HUMIDITY + HUMIDITY_VARIANCE));
     turn_off_humidifier();
     humidifier_state = HUMIDIFIER_OFF;
   }
@@ -74,7 +94,8 @@ void chicken_humidity_reading_handler(void* handler_args, esp_event_base_t base,
 
 static void egg_turner_callback(void* arg) {
     int64_t time_since_boot = esp_timer_get_time();
-    ESP_LOGI(TAG, "Periodic timer called, time since boot: %lld us", time_since_boot);
+    ESP_LOGI(TAG, "Periodic timer called, time since boot: %llu us", time_since_boot);
+    rotate();
 }
 
 void chicken_start() {
@@ -84,6 +105,7 @@ void chicken_start() {
     };
 
     set_up_uln2003();
+    wait_for_mqtt_to_connect();
   
     esp_timer_handle_t egg_turner_timer;
     ESP_ERROR_CHECK(esp_timer_create(&egg_turner_timer_args, &egg_turner_timer));

@@ -10,6 +10,8 @@
 #include "sntp_helper.h"
 #include "uln2003_stepper_driver.h"
 #include "wifi_helper.h"
+#include "chicken_incubator.h"
+#include "mqtt_helper.h"
 
 static const char* TAG = "Main";
 
@@ -52,21 +54,25 @@ void app_main(void) {
   ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_TEMPERATURE, chicken_temperature_reading_handler, NULL));
   ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENTS, SENSOR_READING_HUMIDITY, chicken_humidity_reading_handler, NULL));
 
-  // initialize_wifi_in_station_mode();
-  // wait_for_ip();
+  initialize_wifi_in_station_mode();
+  wait_for_ip();
+  initialize_mqtt();
 
-  // time_t now;
-  // set_current_time(&now);
+  time_t now;
+  set_current_time(&now);
 
-  // if (!time_is_set(now) || time_is_stale(now)) {
-  //   ESP_LOGI(TAG, "Time has either not been set or become stale. Connecting to WiFi and syncing time over NTP.");
-  //   wait_for_ip();
-  //   obtain_time(&now);
-  // }
+  if (!time_is_set(now) || time_is_stale(now)) {
+    ESP_LOGI(TAG, "Time has either not been set or become stale. Connecting to WiFi and syncing time over NTP.");
+    wait_for_ip();
+    obtain_time(&now);
+  }
 
-  // char strftime_buf[64];
-  // get_time_string(strftime_buf);
-  // ESP_LOGI(TAG, "Time is: %s", strftime_buf);
+  wait_for_mqtt_to_connect();
+
+  char strftime_buf[64];
+  get_time_string(strftime_buf);
+  ESP_LOGI(TAG, "Time is: %s", strftime_buf);
 
   start_bme280_read_tasks();
+  chicken_start();
 }
