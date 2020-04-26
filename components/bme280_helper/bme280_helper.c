@@ -11,6 +11,8 @@
 #define SDA_PIN 23
 #define SCL_PIN 22
 
+#define SENSOR_READ_INTERVAL_SECONDS 10
+
 static const char *TAG = "BME280_HELPER";
 
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
@@ -116,7 +118,7 @@ void task_bme280_forced_mode(void *i2c_address) {
   wait_time = bme280_compute_wait_time(&wait_time, &bme280);
 
   while (true) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay((SENSOR_READ_INTERVAL_SECONDS * 1000) / portTICK_PERIOD_MS);
     result = bme280_get_forced_uncomp_pressure_temperature_humidity(&v_uncomp_pressure, &v_uncomp_temperature,
                                                                     &v_uncomp_humidity, &bme280);
 
