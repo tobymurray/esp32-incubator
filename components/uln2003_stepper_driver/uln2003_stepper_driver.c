@@ -19,6 +19,8 @@ static const char *TAG = "stepper";
 #define IN3_PIN CONFIG_IN3_PIN
 #define IN4_PIN CONFIG_IN4_PIN
 
+// static const int STEPS_PER_REVOLUTION = 2038;
+
 int pins[4] = {IN1_PIN, IN2_PIN, IN3_PIN, IN4_PIN};
 
 int steps[8][4] = {
@@ -39,9 +41,16 @@ void set_up() {
   }
 }
 
+static void deenergize_coils() {
+  for (int pin = 0; pin < 4; pin++) {
+    delayMicroseconds(100);
+    gpio_set_level(pins[pin],LOW);
+  }
+}
+
 void rotate() {
   ESP_LOGI(TAG, "Starting steps...");
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 500; i++) {
     for (int step = 0; step < 8; step++) {
       vTaskDelay(10 / portTICK_PERIOD_MS);
       for (int pin = 0; pin < 4; pin++) {
@@ -51,4 +60,5 @@ void rotate() {
     }
   }
   ESP_LOGI(TAG, "...Steps done");
+  deenergize_coils();
 }
