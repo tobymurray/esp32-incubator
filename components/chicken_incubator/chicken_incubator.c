@@ -43,6 +43,9 @@ static float TARGET_HATCHER_HUMIDITY = 70.5;
 // How much the humidity can vary above and below the target before the humidifier is turned on
 static float HUMIDITY_VARIANCE = 5;
 
+// This drops the top threshold, so heating turns off sooner (hopefully overshoots less)
+static float HEATING_MAX_COMPENSATION = -0.4f;
+
 void chicken_temperature_reading_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
   struct EventData * data = (struct EventData *) event_data;
   float temperature = data->reading;
@@ -59,7 +62,7 @@ void chicken_temperature_reading_handler(void* handler_args, esp_event_base_t ba
     ESP_LOGI(TAG, "Temperature %.2f*C is below threshold %.2f*C, turning heater on", temperature, TARGET_INCUBATION_TEMPERATURE - TEMPERATURE_VARIANCE);
     turn_on_heater();
     heating_state = HEATING;
-  } else if (heating_state == HEATING && temperature > (TARGET_INCUBATION_TEMPERATURE + TEMPERATURE_VARIANCE)) {
+  } else if (heating_state == HEATING && temperature > (TARGET_INCUBATION_TEMPERATURE + TEMPERATURE_VARIANCE - HEATING_MAX_COMPENSATION)) {
     ESP_LOGI(TAG, "Temperature %.2f*C is above threshold %.2f*C, turning heater off", temperature, TARGET_INCUBATION_TEMPERATURE + TEMPERATURE_VARIANCE);
     turn_off_heater();
     heating_state = COOLING;
