@@ -84,6 +84,7 @@ void wait_for_mqtt_to_connect() {
   ESP_LOGI(TAG, "Waiting for MQTT client to connect");
   xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED, false, true, portMAX_DELAY);
   xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED);
+  ESP_LOGI(TAG, "MQTT client connected!");
 }
 
 void wait_for_all_messages_to_be_published(void) {

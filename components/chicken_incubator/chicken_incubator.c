@@ -105,7 +105,6 @@ void chicken_start() {
     };
 
     set_up_uln2003();
-    wait_for_mqtt_to_connect();
   
     esp_timer_handle_t egg_turner_timer;
     ESP_ERROR_CHECK(esp_timer_create(&egg_turner_timer_args, &egg_turner_timer));
