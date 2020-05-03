@@ -93,5 +93,6 @@ void get_time_string(char timestring[]) {
   time_t now;
   time(&now);
   localtime_r(&now, &timeinfo);
-  strftime(timestring, 64 * sizeof(timestring[0]), "%c", &timeinfo);
+  // Add 5 for the timezone in format '+hhmm'
+  strftime(timestring, 64 * sizeof(timestring[0]) + 5, "%c %z", &timeinfo);
 }

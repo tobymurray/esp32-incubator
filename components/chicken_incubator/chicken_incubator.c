@@ -52,7 +52,7 @@ void chicken_temperature_reading_handler(void* handler_args, esp_event_base_t ba
 
   char strftime_buf[64];
   get_time_string(strftime_buf);
-  publish_message(strftime_buf, "temperature", "temperature", temperature_measurement);
+  publish_message(strftime_buf, "incubator/temperature", "temperature", temperature_measurement);
 
   ESP_LOGI(TAG, "Received temperature reading: %.2f*C from sensor %X", temperature, i2c_address);
   if (heating_state == COOLING && temperature < (TARGET_INCUBATION_TEMPERATURE - TEMPERATURE_VARIANCE)) {
@@ -76,7 +76,7 @@ void chicken_humidity_reading_handler(void* handler_args, esp_event_base_t base,
 
   char strftime_buf[64];
   get_time_string(strftime_buf);
-  publish_message(strftime_buf, "humidity", "relative_humidity", humidity_measurement);
+  publish_message(strftime_buf, "incubator/humidity", "relative_humidity", humidity_measurement);
 
   ESP_LOGI(TAG, "Received humidity reading: %.2f%%", humidity);
   if (humidity < (TARGET_INCUBATION_HUMIDITY - HUMIDITY_VARIANCE)) {
