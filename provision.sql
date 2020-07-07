@@ -18,3 +18,11 @@ CREATE TABLE humidity (
   created_at timestamptz NOT NULL DEFAULT now(),
   client_time timestamp NOT NULL
 );
+
+CREATE TABLE egg_turner ( 
+  id              serial primary key, 
+  status varchar (8) NOT NULL,
+  mac varchar (17) NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  client_time timestamp NOT NULL
+);
